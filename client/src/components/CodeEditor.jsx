@@ -5,7 +5,7 @@ import { Editor } from "@monaco-editor/react";
 import LanguageSelector from "./LanguageSelector";
 import { CODE_SNIPPETS } from "../constants";
 import Output from "./Output";
-import RoomInput from "./RoomInput";
+import Form from "./Form";
 
 const socket = io("https://code-editor-live.glitch.me/");
 
@@ -15,21 +15,19 @@ const CodeEditor = ({ roomId, username }) => {
   const [language, setLanguage] = useState("javascript");
 
   useEffect(() => {
-    if (roomId && username) {
-      socket.emit("joinRoom", { roomId, username });
-    }
+    if (!roomId || !username) return; // ✅ Prevent errors if roomId is empty
 
-    socket.on("codeUpdate", (code) => {
-      setValue(code);
-    });
+    socket.emit("joinRoom", { roomId, username });
 
-    socket.on("languageUpdate", (language) => {
-      setLanguage(language);
-    });
+    const handleCodeUpdate = (code) => setValue(code);
+    const handleLanguageUpdate = (lang) => setLanguage(lang);
+
+    socket.on("codeUpdate", handleCodeUpdate);
+    socket.on("languageUpdate", handleLanguageUpdate);
 
     return () => {
-      socket.off("codeUpdate");
-      socket.off("languageUpdate");
+      socket.off("codeUpdate", handleCodeUpdate);
+      socket.off("languageUpdate", handleLanguageUpdate);
     };
   }, [roomId, username]);
 
@@ -38,9 +36,10 @@ const CodeEditor = ({ roomId, username }) => {
     editor.focus();
   };
 
-  const onSelect = (language) => {
-    setLanguage(language);
-    socket.emit("languageUpdate", { roomId, language });
+  const onSelect = (newLanguage) => {
+    setLanguage(newLanguage);
+    setValue(CODE_SNIPPETS[newLanguage] || ""); // ✅ Load default snippet
+    socket.emit("languageUpdate", { roomId, language: newLanguage });
   };
 
   const onChange = (code) => {
@@ -77,10 +76,10 @@ const App = () => {
   return (
     <Box>
       {!joined ? (
-        <RoomInput
+        <Form
           setRoomId={setRoomId}
           setUsername={setUsername}
-          onJoin={() => setJoined(true)}
+          onJoin={() => setJoined(true)} // ✅ Pass the onJoin function
         />
       ) : (
         <CodeEditor roomId={roomId} username={username} />
@@ -88,5 +87,4 @@ const App = () => {
     </Box>
   );
 };
-
-export default App;
+ export default App;

@@ -1,15 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Box, VStack, Input, Button, Heading, Text } from "@chakra-ui/react";
 
-const RoomInput = ({ setRoomId, setUsername, onJoin }) => {
-  const [room, setRoom] = useState("");
+const Form = ({ setRoomId, setUsername, onJoin }) => {
+  // ✅ Add onJoin
+
+  const navigate = useNavigate();
+  const { roomid } = useParams(); // Get roomId from URL
+  const [room, setRoom] = useState(roomid || "");
   const [name, setName] = useState("");
 
-  const handleJoin = () => {
-    if (!room || !name) return;
-    setRoomId(room);
-    setUsername(name);
+  useEffect(() => {
+    if (roomid) {
+      setRoom(roomid);
+    }
+  }, [roomid]);
+
+const handleJoin = () => {
+  if (!room || !name) {
+    alert("Room ID and Name are required!");
+    return;
+  }
+
+  console.log("Joining Room with:", room, name); // ✅ Debugging log
+
+  setRoomId(room);
+  setUsername(name);
+
+  if (onJoin) {
+    // ✅ Check if onJoin exists before calling it
     onJoin();
+  } else {
+    console.error("onJoin function is missing!"); // Debugging error
+  }
+};
+
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/${room}`;
+    navigator.clipboard.writeText(url);
+    alert("Room link copied to clipboard!");
   };
 
   return (
@@ -75,9 +105,23 @@ const RoomInput = ({ setRoomId, setUsername, onJoin }) => {
         >
           🔥 Join Room
         </Button>
+        <Button
+          size="lg"
+          w="full"
+          bg="blue.500"
+          color="white"
+          borderRadius="md"
+          fontWeight="bold"
+          _hover={{ transform: "scale(1.05)", transition: "0.3s" }}
+          _active={{ transform: "scale(0.95)" }}
+          onClick={handleShare}
+          isDisabled={!room}
+        >
+          📤 Share Room Link
+        </Button>
       </VStack>
     </Box>
   );
 };
 
-export default RoomInput;
+export default Form;
